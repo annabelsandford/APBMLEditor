@@ -40,6 +40,7 @@ using System.Windows.Forms;
 using System.Net;
 using NAudio.Wave;
 using Microsoft.VisualBasic;
+using System.IO.Compression;
 
 namespace APBMLEditor
 {
@@ -628,6 +629,12 @@ namespace APBMLEditor
 
             // save library_version to mlver.ini
             System.IO.File.WriteAllText(project_path + "\\Library\\mlver.ini", library_version);
+
+            // create zip of library folder
+            string zip_path = project_path + "\\Library.zip";
+            ZipFile.CreateFromDirectory(project_path + "\\Library", zip_path);
+            // move zip to library folder
+            System.IO.File.Move(zip_path, project_path + "\\Library\\Library.zip");
 
             // progress bar 100
             progressBar1.Value = 100;
