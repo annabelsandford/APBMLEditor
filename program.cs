@@ -590,7 +590,7 @@ namespace APBMLEditor
             string[] anna_files = System.IO.Directory.GetFiles(project_path + "\\Library", "*.anna", System.IO.SearchOption.AllDirectories);
 
             string server_lib_text = new WebClient().DownloadString(server_defaultlib);
-            string lib_header = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + Environment.NewLine + "<MusicPlayer Version=\"1\">" + Environment.NewLine + "<Library>" + Environment.NewLine;
+            string lib_header = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + Environment.NewLine + "<MusicPlayer Version=\"1\">" + Environment.NewLine + "  <Library>" + Environment.NewLine;
 
             // remove first 3 lines from server_lib_text
             string[] server_lib_text_lines = server_lib_text.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
@@ -615,7 +615,7 @@ namespace APBMLEditor
                 string annie_artist = annie_file_lines[1];
                 string annie_album = annie_file_lines[2];
                 string annie_seconds = annie_file_lines[3] + ".0";
-                string add_xml = "<Track Default=\"true\" Name=\"" + annie_title + "\" Artist=\"" + annie_artist + "\" Album=\"" + annie_album + "\" Genre=\"Electronica/Dance\" Duration=\"" + annie_seconds + "\" Removed=\"false\">" + anna_to_mp3 + "</Track>";
+                string add_xml = "    <Track Default=\"true\" Name=\"" + annie_title + "\" Artist=\"" + annie_artist + "\" Album=\"" + annie_album + "\" Genre=\"Electronica/Dance\" Duration=\"" + annie_seconds + "\" Removed=\"false\">" + anna_to_mp3 + "</Track>";
 
                 // add add_xml to beginning of server_lib_text_lines_2
                 server_lib_text_lines_2 = add_xml + Environment.NewLine + server_lib_text_lines_2;
