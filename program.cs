@@ -1,32 +1,3 @@
-//            !!!"..?!!.' ......        !!!!!!! 
-//           !!! e2$ .<!!!!!!!!!`~!~!!!!!!~! ""!`.` 
-//           !!!!^:!!!!!!!!!!!!!!.:!!!!!!!!! *@ !4:'
-//          . >! !!!!!!!!!!!!!!!!!:^:!!!!!!!!:  J!: 
-//          .!! ,<!!!!!!!!!!!!!...`*."!!!!!!!!!!.~~
-//          !!~!!!!!!!!!f !!!! #$$$$$$b`!!!!!L!!!(  
-//         !!! ! !!!!! !>b"!!!!. ^$$$*"!!~!4!!!!!!`x 
-//        .!!!! !`!! d "= "$N !!f u `!!!~' !!!!!!!!! 
-//        !!!!!  !XH.=m" C..^*$!.  .~L:u@ !! !!!!~:` 
-//       !!!!!   '`"*:$$P k  $$$$e$R""" mee"<!!!!!  
-//      :!!!!"    $N $$$  * x$$$$$$$   <-m.` !!!!!'<! 
-//     .!!!!f     "$ $$$.  u$$$$$$$e $ : ee `  !`:!!!`
-//     !!!!!.        $$$$$$$$$$$ $$   u$$" r'    !!!!!             ~4
-//    !!!!!          "$$$$$$&""%$$$ee$$$ @"      !!!!!h            $b`
-//   !!!!!             $$$$     $$$$$$$           !!!!!           @$ 
-//  !!!!! X             "&$c   $$$$$"              !!!!!       `e$$
-// !!!!! !              $$."***""                   !!!!h     z$$$$$$$$$$$$$$eJ
-//!!!!! !!     .....     ^"'$$$            $         !!!!    J$$$$$$$$$$$"
-//!!!! !!  .d$$$$$$$$$$e( <  d            4$          ~!!! z$$F$$$$$$$$$$b
-//!!! !!  J$$$$$$*****$$$$. "J<=    t'b  `)$b' ,C)`    `!~@$$$$$J'$$$$$$$
-//!!~:!   $$$$"e$$$$$$$$c"$N". - ". :F$ ?P"$$$ #$$      .$$$$$$$FL$$$$$$$
-//!`:!    $$"$$$$$$$$$$$$$$e $$$.   '>@ z$&$$$eC$"    .d$$$$$$$P      "*$$.
-// !!     #$$$$$$$*"zddaaa""e^*F""*. "$ $$P.#$$$$E:: d$$$$$$$$           ^$ 
-//!!~      ;$$$$"d$$$$$$$$$$$$$u       $c#d$$@$\$>`x$$$$$$$$"             "c
-//!!        ;e?(."$$$$$$$$$$$$$$$$u     "$NJ$$$d"x$$$$$$$$$ 
-
-// Written by Annabel Jocelyn Sandford (@annie_sandford)
-// 12.10.2022
-
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -142,6 +113,23 @@ namespace APBMLEditor
                 // open dialog with textbox to change filename
                 string filename = Microsoft.VisualBasic.Interaction.InputBox("Enter new filename without extension", "Change filename", "Filename");
                 if (filename != "") {
+                    // check if filename includes spaces, if yes remove them
+                    if (filename.Contains(" ")) {
+                        filename = filename.Replace(" ", "");
+                    }
+                    // make filename lowercase
+                    filename = filename.ToLower();
+                    // check if filename includes ".mp3" if yes remove
+                    if (filename.Contains(".mp3")) {
+                        filename = filename.Replace(".mp3", "");
+                    }
+                    // remove all special characters
+                    filename = new string(filename.Where(c => !char.IsPunctuation(c)).ToArray());
+                    // check if filename is longer than 16 characters
+                    if (filename.Length > 16) {
+                        MessageBox.Show("Filename is too long, maximum length is 16 characters", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
                     try {
                         string new_filename = filename + ".mp3";
                         string new_annie = new_filename + ".annie";
@@ -502,6 +490,7 @@ namespace APBMLEditor
                 {
                     // error out
                     MessageBox.Show("The file " + file + " does not have an annie file.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    progressBar1.Value = 0;
                     return;
                 }
                 string[] lines = System.IO.File.ReadAllLines(file + ".annie");
@@ -511,6 +500,7 @@ namespace APBMLEditor
                 } else {
                     // error out
                     MessageBox.Show("Before exporting, please make sure all your files have the necessary metadata. The file " + file + " is not ready to be launched. Please check the file and try again.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    progressBar1.Value = 0;
                     return;
                 }
             }
@@ -524,6 +514,7 @@ namespace APBMLEditor
             } else {
                 // try again
                 MessageBox.Show("Please enter a valid version number.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                progressBar1.Value = 0;
                 return;
             }
 
@@ -533,6 +524,7 @@ namespace APBMLEditor
                 //continue;
             } catch (Exception ex) {
                 MessageBox.Show("Error: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                progressBar1.Value = 0;
                 return;
             }
 
@@ -556,6 +548,7 @@ namespace APBMLEditor
                 } else {
                     // error out
                     MessageBox.Show("The file " + file + " is already in the server tree. Please rename it and try again.", "Compatibility Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    progressBar1.Value = 0;
                     return;
                 }
             }
