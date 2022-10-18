@@ -25,7 +25,7 @@
 //!!        ;e?(."$$$$$$$$$$$$$$$$u     "$NJ$$$d"x$$$$$$$$$ 
 
 // Written by Annabel Jocelyn Sandford (@annie_sandford)
-// 12.10.2022
+// 14.10.2022
 // Matt where content updates? :c
 
 using System;
@@ -41,11 +41,15 @@ using System.Net;
 using NAudio.Wave;
 using Microsoft.VisualBasic;
 using System.IO.Compression;
+using YoutubeExplode;
+using System.IO;
+using YoutubeExplode.Videos.Streams;
 
 namespace APBMLEditor
 {
     public partial class Form1 : Form
     {
+        public bool imported_yt = false;
         public string project_path = "";
         public string last_clicked = "";
         public int project_size;
@@ -92,6 +96,23 @@ namespace APBMLEditor
         private void Form1_Load(object sender, EventArgs e)
         {
 
+        }
+
+        private void unloadProject()
+        {
+            // unload project
+            project_path = "";
+            imported_yt = false;
+            last_clicked = "";
+            project_size = 0;
+            treeView1.Nodes.Clear();
+            // hide panel1
+            panel1.Visible = false;
+            button5.Visible = false;
+            loadLastUsedToolStripMenuItem.Enabled = false;
+            importMP3FolderToolStripMenuItem.Enabled = false;
+
+            toolStripStatusLabel1.Text = "No project loaded";
         }
 
         private void changeMetadata(string metadata) {
@@ -193,16 +214,17 @@ namespace APBMLEditor
         }
 
         private void loadProject() {
+            progressBar1.Maximum = 100;
+            progressBar1.Value = 5;
             clearScreen();
             treeView1.Nodes.Clear();
             treeView1.Nodes.Add(project_path);
             string[] files = System.IO.Directory.GetFiles(project_path, "*.mp3", System.IO.SearchOption.AllDirectories);
+            bool export_okay = true;
             foreach (string file in files)
             {
                 treeView1.Nodes[0].Nodes.Add(file);
-
                 string corres_annie = file + ".annie";
-
                 // if file exists
                 if (System.IO.File.Exists(corres_annie))
                 {
@@ -214,15 +236,18 @@ namespace APBMLEditor
                     // if any of them are false, change color
                     if (status_title == "false" || status_artist == "false" || status_album == "false" || status_filename == "false") {
                         treeView1.Nodes[0].Nodes[treeView1.Nodes[0].Nodes.Count - 1].ForeColor = System.Drawing.Color.Red;
+                        export_okay = false;
                     } else {
                         treeView1.Nodes[0].Nodes[treeView1.Nodes[0].Nodes.Count - 1].ForeColor = System.Drawing.Color.Green;
                     }
                 } else {
                     treeView1.Nodes[0].Nodes[treeView1.Nodes[0].Nodes.Count - 1].ForeColor = Color.Orange;
+                    export_okay = false;
                 }
             }
             toolStripStatusLabel1.Text = "Loaded project: " + project_path;
             toolStripStatusLabel2.Text = "Cloud Synced!";
+            progressBar1.Value = 30;
 
             // count files
             int fileCount = 0;
@@ -231,6 +256,7 @@ namespace APBMLEditor
                 fileCount++;
             }
             label2.Text = "Amount Files: " + fileCount;
+            progressBar1.Value = 80;
 
             // get size of folder project_path in MB
             long size = 0;
@@ -242,6 +268,23 @@ namespace APBMLEditor
             label3.Text = "Project Size: " + (size / 1024 / 1024) + " MB";
             importMP3FolderToolStripMenuItem.Enabled = true;
             button5.Visible = true;
+
+            // open treeview
+            treeView1.ExpandAll();
+            progressBar1.Value = 100;
+
+            if (export_okay) {
+                button5.BackColor = SystemColors.ActiveCaption;
+            } else {
+                button5.BackColor = SystemColors.ButtonShadow;
+            }
+
+            if (imported_yt == true) {
+                imported_yt = false;
+                // show success message box
+                MessageBox.Show("Imported YouTube Video successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            progressBar1.Value = 0;
         }
 
         private void loadFile() {
@@ -454,6 +497,9 @@ namespace APBMLEditor
         {
             if (project_path != "")
             {
+                treeView1.Nodes.Clear();
+                clearScreen();
+                System.Threading.Thread.Sleep(500);
                 loadProject();
             } else {
                 MessageBox.Show("Please create or open a project first.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -488,6 +534,29 @@ namespace APBMLEditor
                 // messagebox path of node
                 //MessageBox.Show(fileClicked);
                 loadFile();
+            } else {
+                clearScreen();
+            }
+        }
+
+        // private void treeView arrow key up
+        private void treeView1_KeyUp(object sender, KeyEventArgs e)
+        {
+            try {
+                if (e.KeyCode == Keys.Up || e.KeyCode == Keys.Down) {
+                    if (treeView1.SelectedNode.FullPath != project_path && treeView1.SelectedNode.FullPath != null) {
+                        // get selected node
+                        string fileClicked = treeView1.SelectedNode.FullPath;
+                        // clean path
+                        last_clicked = fileClicked.Replace(project_path + "\\", "");
+                        loadFile();
+                    } else {
+                        clearScreen();
+                    }
+                }
+            } catch (Exception ex)
+            {
+                // stay quiet.
             }
         }
 
@@ -698,6 +767,96 @@ namespace APBMLEditor
         {
             // cock check
             System.Diagnostics.Process.Start("https://raw.githubusercontent.com/annabelsandford/APBMLEditor/main/cc.jpg");
+        }
+
+        private async void importYTLinkToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (project_path == "") {
+                MessageBox.Show("Please create or open a project first.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            } else {
+                // show inputbox
+                string yt_link = Microsoft.VisualBasic.Interaction.InputBox("Enter YouTube link:", "Import YouTube link", "https://www.youtube.com/watch?v=", -1, -1);
+                if (yt_link == "") {
+                    return;
+                }
+                // check if link is valid
+                if (yt_link.Contains("youtube.com/watch?v=")) {
+                    // check if yt_link contains https:// or http://, if not add it
+                    if (!yt_link.Contains("https://")) {
+                        if (!yt_link.Contains("http://")) {
+                            yt_link = "https://" + yt_link;
+                        }
+                    }
+                    // set progressbar max to 100
+                    progressBar1.Maximum = 100;
+                    // set progressbar value to 0
+                    progressBar1.Value = 10;
+
+                    // generate random filename
+                    string random_filename = Path.GetRandomFileName();
+                    random_filename = random_filename.Replace(".", "");
+
+                    try {
+                        // get windows download path
+                    string download_path = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "\\Downloads";
+
+                    var youtube = new YoutubeClient();
+
+                    var streamManifest = await youtube.Videos.Streams.GetManifestAsync(yt_link);
+                    var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
+                    progressBar1.Value = 50;
+                    // download video
+                    await youtube.Videos.Streams.DownloadAsync(streamInfo, download_path + "\\"+random_filename+".wav");
+                    cs_ffmpeg_mp3_converter.FFMpeg.Convert2Mp3(download_path + "\\"+random_filename+".wav", download_path + "\\"+random_filename+".mp3");
+
+                    // run function "downloadComplete" when download is complete
+
+                    // move file to project_path
+                    System.IO.File.Move(download_path + "\\"+random_filename+".mp3", project_path + "\\"+random_filename+".mp3");
+                    // delete temp.wav
+                    System.IO.File.Delete(download_path + "\\"+random_filename+".wav");
+
+                    progressBar1.Value = 100;
+
+                    //  reload project
+                    imported_yt = true;
+                    loadProject();
+                    progressBar1.Value = 0;
+                    } catch (Exception ex) {
+                        progressBar1.Value = 0;
+                        MessageBox.Show("Error: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                } else {
+                    MessageBox.Show("Invalid YouTube link.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+            }
+        }
+
+        private void openInExplorerToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // open last clicked file in explorer
+            System.Diagnostics.Process.Start("explorer.exe", "/select," + project_path + "\\" + last_clicked);
+        }
+
+        private void deleteProjectToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (project_path != "" || project_path != null) {
+                // yes or cancel messagebox
+                DialogResult dialogResult = MessageBox.Show("Are you sure you want to delete this project?", "Delete project", MessageBoxButtons.YesNo);
+                if (dialogResult == DialogResult.Yes)
+                {
+                    // delete project
+                    System.IO.Directory.Delete(project_path, true);
+                    unloadProject();
+                }
+                else if (dialogResult == DialogResult.No)
+                {
+                    // do nothing
+                }
+            }
         }
     }
 }
